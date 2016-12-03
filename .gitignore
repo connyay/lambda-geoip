@@ -1,0 +1,4 @@
+handler.zip
+*.mmdb
+*.txt
+_docker/entrypoint
