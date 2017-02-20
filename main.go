@@ -1,11 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"net"
 	"strings"
 
-	"github.com/eawsy/aws-lambda-go/service/lambda/runtime"
+	"github.com/eawsy/aws-lambda-go-core/service/lambda/runtime"
 	"github.com/oschwald/maxminddb-golang"
 )
 
@@ -37,22 +36,22 @@ type IncomingEvent struct {
 	IP string `json:"source-ip"`
 }
 
-func handle(evt json.RawMessage, ctx *runtime.Context) (interface{}, error) {
-	var ie IncomingEvent
-	if err := json.Unmarshal(evt, &ie); err != nil {
-		return nil, err
-	}
-	l, err := getLocation(ie.IP)
-	output := strings.Join([]string{ie.IP, l.City.Names["en"], l.FullISO()}, ",")
+var db *maxminddb.Reader
+
+func init() {
+	db, _ = maxminddb.Open("GeoLite2-City.mmdb")
+}
+
+func Handle(evt *IncomingEvent, ctx *runtime.Context) (interface{}, error) {
+	l, err := getLocation(evt.IP)
+	output := strings.Join([]string{evt.IP, l.City.Names["en"], l.FullISO()}, ",")
 	return output, err
 }
 
 func getLocation(ip string) (l Location, err error) {
-	db, err := maxminddb.Open("GeoLite2-City.mmdb")
-	if err != nil {
+	if db == nil {
 		return
 	}
-	defer db.Close()
 	parsedIp := net.ParseIP(ip)
 	err = db.Lookup(parsedIp, &l)
 	if err != nil {
@@ -60,9 +59,3 @@ func getLocation(ip string) (l Location, err error) {
 	}
 	return
 }
-
-func init() {
-	runtime.HandleFunc(handle)
-}
-
-func main() {}

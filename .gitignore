@@ -1,4 +1,4 @@
-handler.zip
+package.zip
 *.mmdb
 *.txt
-_docker/entrypoint
+*.so
